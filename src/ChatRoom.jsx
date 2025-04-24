@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-
 const ChatRoom = ({ roomName, user }) => {
   const [socket, setSocket] = useState(null);
   const [chats, setChats] = useState([]);
   const [chat, setChat] = useState("");
-
+  const [file, setFile] = useState(null);
   useEffect(() => {
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${roomName}/`);
     setSocket(ws);
@@ -21,7 +20,7 @@ const ChatRoom = ({ roomName, user }) => {
       const data = JSON.parse(event.data);
       setChats((prev) => [
         ...prev,
-        { sender: data.sender, chat: data.message },
+        { sender: data.sender, chat: data.message, file: data.file },
       ]); // Đổi "chat" thành "message"
     };
 
@@ -34,10 +33,32 @@ const ChatRoom = ({ roomName, user }) => {
   }, [roomName]);
 
   const sendChat = () => {
-    if (socket && chat) {
-      socket.send(JSON.stringify({ message: chat, sender: user })); // Đảm bảo gửi đúng key "message"
-      setChat("");
+    if (!socket) return;
+
+    const messageData = { message: chat, sender: user, file: null };
+    console.log("sendChat");
+    if (file) {
+      console.log("file", file);
+      const formData = new FormData();
+      formData.append("link", file);
+      formData.append("name", file.name);
+
+      axios
+        .post("http://127.0.0.1:8000/api/files/", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((response) => {
+          messageData.file = response.data.id;
+          console.log("file", response.data.id);
+          socket.send(JSON.stringify(messageData));
+        })
+        .catch((error) => console.error("File upload error:", error));
+    } else if (chat) {
+      socket.send(JSON.stringify(messageData));
     }
+
+    setChat("");
+    setFile(null);
   };
   const styles = {
     container: {
@@ -95,14 +116,16 @@ const ChatRoom = ({ roomName, user }) => {
     },
   };
 
-  
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendChat();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendChat();
     }
-};
-
+  };
+  const handleSendFile = (e) => {
+    const selectedFile = e.target.files[0]; // Lấy tệp ngay lập tức
+    setFile(selectedFile); // Cập nhật state file
+  };
   return (
     <div style={styles.container}>
       <div
@@ -125,6 +148,18 @@ const ChatRoom = ({ roomName, user }) => {
               }}
             >
               <strong>{msg.sender}:</strong> {msg.chat}
+              {msg.file ? (
+                <a
+                  href={`http://127.0.0.1:8000${msg.file.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {msg.file.name}
+                </a>
+              ) : (
+                ""
+              )}
+              {console.log(msg)}
             </div>
           ))}
         </div>
@@ -138,6 +173,12 @@ const ChatRoom = ({ roomName, user }) => {
             style={styles.input}
             onKeyDown={handleKeyPress}
           />
+          <input
+            type="file"
+            id="uploadFile"
+            onChange={(e) => handleSendFile(e)}
+          />
+
           <button onClick={sendChat} style={styles.button}>
             Gửi
           </button>

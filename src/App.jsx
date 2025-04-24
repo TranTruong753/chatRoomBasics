@@ -67,10 +67,6 @@ function App() {
     return <ChatRoom roomName={room} user={user.trimEnd()} />;
   }
 
-
-
-  
-
   return (
     <div style={styles.container}>
       <div style={styles.card}>
@@ -79,8 +75,7 @@ function App() {
           type="text"
           placeholder="Tên của bạn"
           value={user}
-         onChange={(e) => setUser(e.target.value)}
-
+          onChange={(e) => setUser(e.target.value)}
           style={styles.input}
         />
         <input
