@@ -149,13 +149,16 @@ const ChatRoom = ({ roomName, user }) => {
             >
               <strong>{msg.sender}:</strong> {msg.chat}
               {msg.file ? (
-                <a
-                  href={`http://127.0.0.1:8000${msg.file.url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {msg.file.name}
-                </a>
+                <strong>
+                  <br></br>
+                  <a
+                    href={`http://127.0.0.1:8000${msg.file.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {msg.file.name}
+                  </a>
+                </strong>
               ) : (
                 ""
               )}
